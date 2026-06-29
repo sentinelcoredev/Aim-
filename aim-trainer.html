@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Aim Trainer - FPS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #000;
+        }
+        
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 100;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        #stats {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 100;
+            text-align: right;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .crosshair-line {
+            position: absolute;
+            background: #00ff00;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        
+        .crosshair-h {
+            width: 20px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair-v {
+            width: 2px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .crosshair-dot {
+            width: 4px;
+            height: 4px;
+            background: #00ff00;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #damageIndicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            color: #ff0000;
+            text-shadow: 0 0 10px #ff0000;
+            pointer-events: none;
+            font-weight: bold;
+            animation: damageFlash 0.3s;
+        }
+        
+        @keyframes damageFlash {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 10px;
+            color: #ff0000;
+            text-align: center;
+            display: none;
+            z-index: 200;
+            border: 2px solid #ff0000;
+        }
+        
+        #gameOver h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        
+        #gameOver p {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        
+        #gameOver button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #00ff00;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        #menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 10px;
+            color: #00ff00;
+            text-align: center;
+            z-index: 200;
+            border: 2px solid #00ff00;
+            max-width: 90%;
+        }
+        
+        #menu h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        
+        #menu p {
+            font-size: 14px;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+        
+        #menu button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #00ff00;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            display: block;
+            width: 100%;
+        }
+        
+        #menu button:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="crosshair">
+            <div class="crosshair-line crosshair-h"></div>
+            <div class="crosshair-line crosshair-v"></div>
+            <div class="crosshair-dot"></div>
+        </div>
+        
+        <div id="hud">
+            <div>Health: <span id="healthText">100</span>/100</div>
+            <div>Ammo: <span id="ammoText">30</span>/30</div>
+            <div>Kill Streak: <span id="killStreakText">0</span></div>
+        </div>
+        
+        <div id="stats">
+            <div>FPS: <span id="fpsText">60</span></div>
+            <div>Accuracy: <span id="accuracyText">0</span>%</div>
+            <div>Headshots: <span id="headshotsText">0</span></div>
+            <div>Kills: <span id="killsText">0</span></div>
+        </div>
+        
+        <div id="damageIndicator" style="display: none;"></div>
+        
+        <div id="gameOver">
+            <h1>MISSION FAILED</h1>
+            <p>Health: 0</p>
+            <p id="finalStats"></p>
+            <button onclick="location.reload()">Try Again</button>
+        </div>
+        
+        <div id="menu">
+            <h1>🎯 AIM TRAINER 3D</h1>
+            <p>Click to focus • Mouse to aim • Click to shoot</p>
+            <p>Aim for headshots! Take too much damage and it's game over.</p>
+            <p style="color: #ffff00; margin-top: 15px;">Bots spawn from behind and all directions</p>
+            <button onclick="startGame()">Start Training</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
